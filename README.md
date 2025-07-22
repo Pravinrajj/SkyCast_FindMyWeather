@@ -48,7 +48,127 @@ Style form, buttons, weather display cards, and navigation links.
 
 ## Programs:
 
+### Home.jsx
+```jsx
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+function Home() {
+    const [city, setCity] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleSubmit = useCallback((e) => {
+        e.preventDefault();
+        if (city.trim() === '') {
+        setError('City name cannot be empty');
+        return;
+        }
+        localStorage.setItem('city', city.trim());
+        navigate('/weather');
+    }, [city, navigate]);
+
+    return (
+        <div className="container">
+        <h2>Enter City Name</h2>
+        <form onSubmit={handleSubmit}>
+            <input
+            type="text"
+            value={city}
+            onChange={(e) => {
+                setCity(e.target.value);
+                setError('');
+            }}
+            placeholder="e.g., London"
+            />
+            <button type="submit">Get Weather</button>
+        </form>
+        {error && <p className="error">{error}</p>}
+        </div>
+    );
+}
+
+export default Home;
+```
+
+### Weather.jsx
+```jsx
+import { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+function Weather() {
+    const [weather, setWeather] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const city = localStorage.getItem('city');
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!city) {
+            navigate('/');
+            return;
+        }
+
+        const fetchWeather = async () => {
+            try {
+                const res = await axios.get(
+                    `https://api.weatherapi.com/v1/current.json?key=5c90715be5954158a5295453251107&q=${city}`
+                );
+                setWeather(res.data);
+            } catch (err) {
+                console.error('Failed to fetch weather:', err);
+                setWeather(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchWeather();
+    }, [city, navigate]);
+
+    const tempF = useMemo(() => {
+        return weather ? (weather.current.temp_c * 9) / 5 + 32 : null;
+    }, [weather]);
+
+    if (loading) return <p>Loading...</p>;
+    if (!weather) return <p>Could not fetch weather. Try again.</p>;
+
+    return (
+        <div className="container">
+            <h2>Weather in {weather.location.name}</h2>
+            <div className="card">
+                <p><strong>Condition:</strong> {weather.current.condition.text}</p>
+                <p><strong>Temperature:</strong> {weather.current.temp_c} °C / {tempF.toFixed(2)} °F</p>
+                <p><strong>Humidity:</strong> {weather.current.humidity}%</p>
+                <p><strong>Wind Speed:</strong> {weather.current.wind_kph} kph</p>
+            </div>
+        </div>
+    );
+}
+
+export default Weather;
+```
+### App.jsx:
+```jsx
+import { Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Weather from './pages/Weather';
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/weather" element={<Weather />} />
+    </Routes>
+  );
+}
+
+export default App;
+
+```
 ## Output:
+<img width="871" height="411" alt="image" src="https://github.com/user-attachments/assets/0b491f11-95b8-4c9a-a3e1-572a8cd7c0c4" />
+<img width="693" height="474" alt="image" src="https://github.com/user-attachments/assets/3e7e1f0c-bc52-4aac-b881-e50626988d71" />
 
 ## Result:
 A responsive single-page application using React that allows users to enter a city name and retrieve real-time weather information using the OpenWeatherMap API has been built successfully. 
